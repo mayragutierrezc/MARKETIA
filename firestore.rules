@@ -21,13 +21,13 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User profiles: users can read/update their own profile, while admins
-    // can manage profiles. Sensitive billing/role fields are admin-only.
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) &&
+      allow create: if isAdmin() || (
+        isOwner(userId) &&
         request.resource.data.id == userId &&
-        request.resource.data.role == 'client';
+        request.resource.data.role == 'client'
+      );
       allow update: if isAdmin() || (
         isOwner(userId) &&
         request.resource.data.role == resource.data.role &&
@@ -37,8 +37,6 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // Businesses belong to one authenticated user. Admins may support users
-    // without bypassing ownership checks in the client application.
     match /businesses/{businessId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -46,7 +44,6 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Strategies follow the same ownership model as businesses.
     match /strategies/{strategyId} {
       allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
@@ -54,13 +51,11 @@ service cloud.firestore {
       allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Pricing is public to read but only administrators may change it.
     match /pricing_config/{configId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Deny access to any collection not explicitly declared above.
     match /{document=**} {
       allow read, write: if false;
     }
