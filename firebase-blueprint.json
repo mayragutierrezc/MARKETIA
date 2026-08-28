@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with plan and usage information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "client"] },
+        "plan": { "type": "string", "enum": ["free", "starter", "pro"] },
+        "billingCycle": { "type": "string", "enum": ["monthly", "annual"] },
+        "generationsUsed": { "type": "number" },
+        "generationsLimit": { "type": "number" },
+        "renewalDate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email"]
+    },
+    "BusinessProfile": {
+      "title": "BusinessProfile",
+      "description": "Business profile for marketing generation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "city": { "type": "string" },
+        "targetAudience": { "type": "string" },
+        "tone": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name"]
+    },
+    "MarketingStrategy": {
+      "title": "MarketingStrategy",
+      "description": "Generated AI marketing strategy and calendar",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "businessId": { "type": "string" },
+        "businessAnalysis": { "type": "object" },
+        "marketingScore": { "type": "object" },
+        "strategicPriorities": { "type": "array" },
+        "calendar30Days": { "type": "array" },
+        "campaigns": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "businessId"]
+    },
+    "PricingConfig": {
+      "title": "PricingConfig",
+      "description": "Global SaaS pricing configuration and currency rates",
+      "type": "object",
+      "properties": {
+        "dollarExchangeRateARS": { "type": "number" },
+        "plans": { "type": "object" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profiles and subscription status"
+    },
+    "businesses/{businessId}": {
+      "schema": "BusinessProfile",
+      "description": "Business profiles created by users"
+    },
+    "strategies/{strategyId}": {
+      "schema": "MarketingStrategy",
+      "description": "Marketing strategies and calendars"
+    },
+    "pricing_config/{configId}": {
+      "schema": "PricingConfig",
+      "description": "Global pricing configuration"
+    }
+  }
+}

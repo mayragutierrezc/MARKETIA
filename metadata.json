@@ -1,0 +1,6 @@
+{
+  "name": "MARKETIA",
+  "description": "Copiloto de marketing impulsado por IA para emprendedores y negocios. Tu equipo de marketing sin contratar una agencia.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
