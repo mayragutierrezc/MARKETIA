@@ -6,35 +6,63 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Admin authorization is evaluated from the authenticated Firebase token,
+    // never from a client-controlled Firestore role field.
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.email != null &&
+        request.auth.token.email.lower() in [
+          'mayragutierrezc04@gmail.com',
+          'admin@marketia.io',
+          'mayra@marketia.io'
+        ];
+    }
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // User profiles
+    // User profiles: users can read/update their own profile, while admins
+    // can manage profiles. Sensitive billing/role fields are admin-only.
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isOwner(userId) || isAuthenticated();
-      allow delete: if false;
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) &&
+        request.resource.data.id == userId &&
+        request.resource.data.role == 'client';
+      allow update: if isAdmin() || (
+        isOwner(userId) &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.plan == resource.data.plan &&
+        request.resource.data.generationsLimit == resource.data.generationsLimit
+      );
+      allow delete: if isAdmin();
     }
 
-    // Businesses
+    // Businesses belong to one authenticated user. Admins may support users
+    // without bypassing ownership checks in the client application.
     match /businesses/{businessId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Strategies
+    // Strategies follow the same ownership model as businesses.
     match /strategies/{strategyId} {
-      allow read: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if isAuthenticated() && (resource == null || resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == resource.data.userId);
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
     }
 
-    // Global pricing configuration
+    // Pricing is public to read but only administrators may change it.
     match /pricing_config/{configId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    // Deny access to any collection not explicitly declared above.
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
